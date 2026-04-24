@@ -1,0 +1,62 @@
+name: abacusai
+
+# ─── API Service ────────────────────────────────────────────────
+services:
+  - name: api
+    source_dir: /
+    build_command: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm --filter @workspace/api-server run build
+    run_command: node --enable-source-maps ./artifacts/api-server/dist/index.mjs
+    environment_slug: node-js
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    http_port: 8080
+    routes:
+      - path: /api
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_AND_BUILD_TIME
+      - key: PORT
+        value: "8080"
+        scope: RUN_AND_BUILD_TIME
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: SESSION_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: ANTHROPIC_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: RAZORPAY_KEY_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: RAZORPAY_KEY_SECRET
+        scope: RUN_TIME
+        type: SECRET
+
+# ─── Frontend Static Site ────────────────────────────────────────
+static_sites:
+  - name: web
+    source_dir: /
+    build_command: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      NODE_ENV=production BASE_PATH=/ PORT=3000 pnpm --filter @workspace/abacusai run build
+    output_dir: artifacts/abacusai/dist/public
+    routes:
+      - path: /
+    catchall_document: index.html
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: BUILD_TIME
+      - key: BASE_PATH
+        value: /
+        scope: BUILD_TIME
+      - key: PORT
+        value: "3000"
+        scope: BUILD_TIME
