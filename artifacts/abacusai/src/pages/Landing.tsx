@@ -48,8 +48,11 @@ const FEATURES = [
 const PLANS = [
   {
     name: "Free",
-    price: "₹0",
-    period: "forever",
+    monthlyPrice: "₹0",
+    yearlyPrice: "₹0",
+    monthlyPeriod: "forever",
+    yearlyPeriod: "forever",
+    yearlySaving: null as string | null,
     description: "Get started with the basics",
     features: [
       "3 sessions per day",
@@ -63,8 +66,11 @@ const PLANS = [
   },
   {
     name: "Star",
-    price: "₹299",
-    period: "per month",
+    monthlyPrice: "₹299",
+    yearlyPrice: "₹2,490",
+    monthlyPeriod: "per month",
+    yearlyPeriod: "per year",
+    yearlySaving: "Save ₹1,098 · 2 months free!",
     description: "The full AbacusAI experience",
     features: [
       "Unlimited sessions",
@@ -110,6 +116,7 @@ const TESTIMONIALS = [
 
 export default function Landing() {
   const [demoValue, setDemoValue] = useState(12345);
+  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -285,6 +292,36 @@ export default function Landing() {
               </p>
             </motion.div>
 
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-4 mb-10">
+              <button
+                onClick={() => setBilling('monthly')}
+                className={`text-sm font-semibold transition-colors ${billing === 'monthly' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBilling(billing === 'monthly' ? 'yearly' : 'monthly')}
+                className="relative w-12 h-6 rounded-full bg-primary transition-colors focus:outline-none"
+                aria-label="Toggle billing period"
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${
+                    billing === 'yearly' ? 'left-7' : 'left-1'
+                  }`}
+                />
+              </button>
+              <button
+                onClick={() => setBilling('yearly')}
+                className={`text-sm font-semibold transition-colors ${billing === 'yearly' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Yearly
+                <span className="ml-2 inline-block px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                  Save 30%
+                </span>
+              </button>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-3xl mx-auto">
               {PLANS.map((plan, i) => (
                 <motion.div
@@ -309,9 +346,16 @@ export default function Landing() {
                       <CardTitle className="text-2xl font-heading">{plan.name}</CardTitle>
                       <CardDescription>{plan.description}</CardDescription>
                       <div className="pt-2">
-                        <span className="text-4xl font-heading font-bold text-foreground">{plan.price}</span>
-                        <span className="text-muted-foreground ml-2">/{plan.period}</span>
+                        <span className="text-4xl font-heading font-bold text-foreground">
+                          {billing === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice}
+                        </span>
+                        <span className="text-muted-foreground ml-2">
+                          /{billing === 'yearly' ? plan.yearlyPeriod : plan.monthlyPeriod}
+                        </span>
                       </div>
+                      {billing === 'yearly' && plan.yearlySaving && (
+                        <p className="text-xs font-semibold text-green-600 mt-1">{plan.yearlySaving}</p>
+                      )}
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col gap-6">
                       <ul className="space-y-3 flex-1">
