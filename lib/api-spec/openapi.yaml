@@ -3,13 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AbacusAI API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: student
+    description: Student operations
+  - name: ai
+    description: AI operations
+  - name: subscription
+    description: Subscription operations
+  - name: parent
+    description: Parent operations
+  - name: teacher
+    description: Teacher operations
+  - name: admin
+    description: Admin operations
+  - name: leaderboard
+    description: Leaderboard operations
 paths:
   /healthz:
     get:
@@ -24,6 +40,503 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /v1/auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/student/dashboard:
+    get:
+      operationId: getStudentDashboard
+      tags: [student]
+      summary: Get student dashboard data
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDashboard"
+
+  /v1/student/progress:
+    get:
+      operationId: getStudentProgress
+      tags: [student]
+      summary: Get student progress data
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProgress"
+
+  /v1/student/session/start:
+    post:
+      operationId: startSession
+      tags: [student]
+      summary: Start a practice session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSessionBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStartResponse"
+        "403":
+          description: Plan limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResponse"
+
+  /v1/student/session/complete:
+    post:
+      operationId: completeSession
+      tags: [student]
+      summary: Complete a practice session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteSessionBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResult"
+
+  /v1/student/sessions:
+    get:
+      operationId: listSessions
+      tags: [student]
+      summary: List recent sessions
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+  /v1/ai/hint:
+    post:
+      operationId: getAIHint
+      tags: [ai]
+      summary: Get AI hint for a problem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIHintBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIHintResponse"
+
+  /v1/ai/generate-problems:
+    post:
+      operationId: generateProblems
+      tags: [ai]
+      summary: Generate AI practice problems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateProblemsBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Problem"
+        "403":
+          description: Plan required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResponse"
+
+  /v1/ai/adapt:
+    post:
+      operationId: adaptDifficulty
+      tags: [ai]
+      summary: Adapt difficulty based on session performance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdaptBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdaptResponse"
+
+  /v1/ai/weekly-report:
+    post:
+      operationId: generateWeeklyReport
+      tags: [ai]
+      summary: Generate weekly AI progress report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklyReportBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReportResponse"
+        "403":
+          description: Plan required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResponse"
+
+  /v1/ai/voice-intent:
+    post:
+      operationId: processVoiceIntent
+      tags: [ai]
+      summary: Process voice command intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoiceIntentBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceIntentResponse"
+        "403":
+          description: Plan required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResponse"
+
+  /v1/subscription/status:
+    get:
+      operationId: getSubscriptionStatus
+      tags: [subscription]
+      summary: Get subscription status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+
+  /v1/subscription/create:
+    post:
+      operationId: createSubscription
+      tags: [subscription]
+      summary: Create a subscription order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSubscriptionResponse"
+
+  /v1/subscription/webhook:
+    post:
+      operationId: subscriptionWebhook
+      tags: [subscription]
+      summary: Razorpay webhook handler
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /v1/subscription/cancel:
+    post:
+      operationId: cancelSubscription
+      tags: [subscription]
+      summary: Cancel subscription
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+
+  /v1/parent/children:
+    get:
+      operationId: getChildren
+      tags: [parent]
+      summary: Get parent's children
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildProfile"
+
+  /v1/parent/child/{childId}/progress:
+    get:
+      operationId: getChildProgress
+      tags: [parent]
+      summary: Get child progress
+      parameters:
+        - in: path
+          name: childId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProgress"
+
+  /v1/parent/reports:
+    get:
+      operationId: getParentReports
+      tags: [parent]
+      summary: Get parent's children reports
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  /v1/teacher/class:
+    get:
+      operationId: getClassStudents
+      tags: [teacher]
+      summary: Get teacher's class students
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildProfile"
+
+  /v1/teacher/stats:
+    get:
+      operationId: getClassStats
+      tags: [teacher]
+      summary: Get class-level stats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassStats"
+
+  /v1/leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get weekly leaderboard
+      parameters:
+        - in: query
+          name: level
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+        "403":
+          description: Plan required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResponse"
+
+  /v1/admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin stats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /v1/admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List all users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: role
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsers"
+
+  /v1/admin/revenue:
+    get:
+      operationId: getRevenueStats
+      tags: [admin]
+      summary: Get revenue stats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +547,753 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    UpgradeResponse:
+      type: object
+      properties:
+        upgrade:
+          type: boolean
+        message:
+          type: string
+        requiredPlan:
+          type: string
+      required:
+        - upgrade
+        - message
+        - requiredPlan
+
+    RegisterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [STUDENT, PARENT, TEACHER]
+        age:
+          type: ["integer", "null"]
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - token
+        - user
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [STUDENT, PARENT, TEACHER, ADMIN]
+        age:
+          type: ["integer", "null"]
+        avatar:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        subscription:
+          $ref: "#/components/schemas/SubscriptionStatus"
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    SubscriptionStatus:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [FREE, STAR, SCHOOL]
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED]
+        endDate:
+          type: ["string", "null"]
+        startDate:
+          type: string
+      required:
+        - plan
+        - status
+        - startDate
+
+    StudentDashboard:
+      type: object
+      properties:
+        student:
+          $ref: "#/components/schemas/StudentInfo"
+        todaySessions:
+          type: integer
+        maxSessionsToday:
+          type: integer
+        weeklyAccuracy:
+          type: number
+        totalXp:
+          type: integer
+        level:
+          type: integer
+        streak:
+          type: integer
+        badges:
+          type: array
+          items:
+            type: string
+        recentSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+        planName:
+          type: string
+        canStartSession:
+          type: boolean
+      required:
+        - student
+        - todaySessions
+        - maxSessionsToday
+        - weeklyAccuracy
+        - totalXp
+        - level
+        - streak
+        - badges
+        - recentSessions
+        - planName
+        - canStartSession
+
+    StudentInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        xp:
+          type: integer
+        streak:
+          type: integer
+        lastActive:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - level
+        - xp
+        - streak
+        - lastActive
+
+    StudentProgress:
+      type: object
+      properties:
+        dailyAccuracy:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyAccuracy"
+        levelProgress:
+          type: array
+          items:
+            $ref: "#/components/schemas/LevelProgress"
+        totalSessions:
+          type: integer
+        avgAccuracy:
+          type: number
+        avgDuration:
+          type: number
+        hintsUsedTotal:
+          type: integer
+        strongAreas:
+          type: array
+          items:
+            type: string
+        weakAreas:
+          type: array
+          items:
+            type: string
+      required:
+        - dailyAccuracy
+        - levelProgress
+        - totalSessions
+        - avgAccuracy
+        - avgDuration
+        - hintsUsedTotal
+        - strongAreas
+        - weakAreas
+
+    DailyAccuracy:
+      type: object
+      properties:
+        date:
+          type: string
+        accuracy:
+          type: number
+        sessions:
+          type: integer
+      required:
+        - date
+        - accuracy
+        - sessions
+
+    LevelProgress:
+      type: object
+      properties:
+        level:
+          type: integer
+        sessionsCompleted:
+          type: integer
+        avgAccuracy:
+          type: number
+      required:
+        - level
+        - sessionsCompleted
+        - avgAccuracy
+
+    StartSessionBody:
+      type: object
+      properties:
+        level:
+          type: integer
+      required:
+        - level
+
+    SessionStartResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        problems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Problem"
+        level:
+          type: integer
+        difficulty:
+          type: string
+      required:
+        - sessionId
+        - problems
+        - level
+        - difficulty
+
+    CompleteSessionBody:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        problems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProblemResult"
+        duration:
+          type: integer
+        hintsUsed:
+          type: integer
+      required:
+        - sessionId
+        - problems
+        - duration
+        - hintsUsed
+
+    SessionResult:
+      type: object
+      properties:
+        score:
+          type: integer
+        accuracy:
+          type: number
+        xpEarned:
+          type: integer
+        badges:
+          type: array
+          items:
+            type: string
+        newLevel:
+          type: ["integer", "null"]
+        aiAdapt:
+          $ref: "#/components/schemas/AdaptResponse"
+        streakUpdated:
+          type: boolean
+      required:
+        - score
+        - accuracy
+        - xpEarned
+        - badges
+        - streakUpdated
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        level:
+          type: integer
+        score:
+          type: integer
+        accuracy:
+          type: number
+        duration:
+          type: integer
+        hintsUsed:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - level
+        - score
+        - accuracy
+        - duration
+        - hintsUsed
+        - createdAt
+
+    Problem:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: number
+        hint:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+      required:
+        - question
+        - answer
+        - hint
+        - difficulty
+
+    ProblemResult:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: number
+        studentAnswer:
+          type: ["number", "null"]
+        correct:
+          type: boolean
+      required:
+        - question
+        - answer
+        - correct
+
+    AIHintBody:
+      type: object
+      properties:
+        studentAge:
+          type: integer
+        level:
+          type: integer
+        problem:
+          type: string
+        wrongAnswers:
+          type: array
+          items:
+            type: number
+      required:
+        - studentAge
+        - level
+        - problem
+        - wrongAnswers
+
+    AIHintResponse:
+      type: object
+      properties:
+        hint:
+          type: string
+        encouragement:
+          type: string
+      required:
+        - hint
+        - encouragement
+
+    GenerateProblemsBody:
+      type: object
+      properties:
+        level:
+          type: integer
+        recentAccuracy:
+          type: number
+        focusArea:
+          type: string
+        studentAge:
+          type: integer
+      required:
+        - level
+        - recentAccuracy
+        - focusArea
+        - studentAge
+
+    AdaptBody:
+      type: object
+      properties:
+        sessionScore:
+          type: integer
+        timePerProblem:
+          type: number
+        hintsUsed:
+          type: integer
+        currentLevel:
+          type: integer
+        recentHistory:
+          type: array
+          items:
+            type: number
+      required:
+        - sessionScore
+        - timePerProblem
+        - hintsUsed
+        - currentLevel
+        - recentHistory
+
+    AdaptResponse:
+      type: object
+      properties:
+        next_difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        recommended_problem_count:
+          type: integer
+        focus_area:
+          type: string
+        should_advance_level:
+          type: boolean
+        coach_tip:
+          type: string
+      required:
+        - next_difficulty
+        - recommended_problem_count
+        - focus_area
+        - should_advance_level
+        - coach_tip
+
+    WeeklyReportBody:
+      type: object
+      properties:
+        studentId:
+          type: string
+      required:
+        - studentId
+
+    WeeklyReportResponse:
+      type: object
+      properties:
+        reportId:
+          type: string
+        htmlContent:
+          type: string
+        weekOf:
+          type: string
+      required:
+        - reportId
+        - htmlContent
+        - weekOf
+
+    VoiceIntentBody:
+      type: object
+      properties:
+        transcript:
+          type: string
+        context:
+          type: string
+      required:
+        - transcript
+        - context
+
+    VoiceIntentResponse:
+      type: object
+      properties:
+        intent:
+          type: string
+        response_text:
+          type: string
+        action:
+          type: string
+      required:
+        - intent
+        - response_text
+        - action
+
+    CreateSubscriptionBody:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [STAR, SCHOOL]
+        billingCycle:
+          type: string
+          enum: [monthly, yearly]
+      required:
+        - plan
+        - billingCycle
+
+    CreateSubscriptionResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        keyId:
+          type: string
+      required:
+        - orderId
+        - amount
+        - currency
+        - keyId
+
+    ChildProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        age:
+          type: ["integer", "null"]
+        level:
+          type: integer
+        xp:
+          type: integer
+        streak:
+          type: integer
+        lastActive:
+          type: string
+        weeklyAccuracy:
+          type: number
+        totalSessions:
+          type: integer
+      required:
+        - id
+        - name
+        - level
+        - xp
+        - streak
+        - lastActive
+        - weeklyAccuracy
+        - totalSessions
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+        studentName:
+          type: string
+        htmlContent:
+          type: string
+        weekOf:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - studentName
+        - htmlContent
+        - weekOf
+        - createdAt
+
+    ClassStats:
+      type: object
+      properties:
+        totalStudents:
+          type: integer
+        avgAccuracy:
+          type: number
+        avgLevel:
+          type: number
+        topPerformers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChildProfile"
+        levelDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/LevelCount"
+      required:
+        - totalStudents
+        - avgAccuracy
+        - avgLevel
+        - topPerformers
+        - levelDistribution
+
+    LevelCount:
+      type: object
+      properties:
+        level:
+          type: integer
+        count:
+          type: integer
+      required:
+        - level
+        - count
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        studentId:
+          type: string
+        name:
+          type: string
+        xp:
+          type: integer
+        accuracy:
+          type: number
+        streak:
+          type: integer
+        level:
+          type: integer
+      required:
+        - rank
+        - studentId
+        - name
+        - xp
+        - accuracy
+        - streak
+        - level
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalStudents:
+          type: integer
+        activeSubscriptions:
+          type: integer
+        freeUsers:
+          type: integer
+        starUsers:
+          type: integer
+        schoolUsers:
+          type: integer
+        totalSessions:
+          type: integer
+        avgDailyActiveSessions:
+          type: number
+        monthlyRevenue:
+          type: number
+        totalRevenue:
+          type: number
+      required:
+        - totalUsers
+        - totalStudents
+        - activeSubscriptions
+        - freeUsers
+        - starUsers
+        - schoolUsers
+        - totalSessions
+        - avgDailyActiveSessions
+        - monthlyRevenue
+        - totalRevenue
+
+    PaginatedUsers:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserProfile"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - users
+        - total
+        - page
+        - limit
+
+    RevenueStats:
+      type: object
+      properties:
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyRevenue"
+        totalRevenue:
+          type: number
+        mrr:
+          type: number
+        churnRate:
+          type: number
+      required:
+        - monthly
+        - totalRevenue
+        - mrr
+        - churnRate
+
+    MonthlyRevenue:
+      type: object
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        newSubscriptions:
+          type: integer
+        cancellations:
+          type: integer
+      required:
+        - month
+        - revenue
+        - newSubscriptions
+        - cancellations

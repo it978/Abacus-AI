@@ -1,0 +1,448 @@
+Build a full-stack web application called "AbacusAI" — an AI-powered abacus 
+learning platform with Free + Paid subscription tiers targeting learners 
+from age 5 to adults (Kids, Tweens, Teens, Adults).
+
+=============================================================
+TECH STACK
+=============================================================
+- Frontend: React + Vite + Tailwind CSS
+- Backend: Node.js + Express
+- Database: PostgreSQL (via Prisma ORM)
+- Auth: JWT-based (email/password) + Google OAuth
+- Payments: Razorpay (Free tier + Paid subscription)
+- AI: Anthropic Claude API (claude-sonnet-4-20250514)
+- Hosting-ready: all env vars in .env file
+
+=============================================================
+USER ROLES
+=============================================================
+1. Student (child or adult learner)
+2. Parent (manages child accounts, pays subscription)
+3. Teacher (manages a class of students)
+4. Admin (full dashboard, user management, revenue view)
+
+=============================================================
+SUBSCRIPTION PLANS
+=============================================================
+
+FREE TIER (No credit card required):
+- 5 AI-assisted practice sessions/day
+- Levels 1–2 only (Beginner + Elementary)
+- Basic AI hints (3 hints/session max)
+- Simple progress chart (last 7 days)
+- No parent dashboard
+- Ads shown (non-intrusive banner)
+
+STAR PLAN — PAID (₹399/month or ₹3499/year):
+- Unlimited sessions daily
+- All 5 levels unlocked
+- Full AI tutor with unlimited hints + step-by-step explanations
+- AI-generated personalized daily practice problems
+- AI adaptive difficulty engine
+- AI voice assistant (speak questions + answers)
+- Weekly AI progress report (PDF, emailed to parent)
+- Parent dashboard with child analytics
+- No ads
+- Leaderboard + XP badges
+- Offline PWA mode
+- Printable AI worksheets
+
+SCHOOL / TEACHER PLAN — PAID (₹1999/month per class):
+- Everything in Star Plan
+- Manage up to 40 students per class
+- Class-level AI progress reports
+- Bulk invite students via CSV
+- Teacher analytics dashboard
+- Custom branding (school logo)
+
+=============================================================
+FREE vs PAID FEATURE GATE LOGIC
+=============================================================
+- Gate all features behind a `subscription_status` check middleware
+- Free users hitting a gated feature see a soft upgrade modal:
+  "Unlock this with AbacusAI Star ⭐ — ₹399/month"
+- Free tier usage tracked: sessions_today counter resets at midnight IST
+- Downgrade gracefully: if subscription expires, user drops to Free tier 
+  automatically, data preserved
+
+=============================================================
+ABACUS LEARNING MODULES (All AI-Powered)
+=============================================================
+
+LEVEL 1 — BEGINNER (Age 5–8 | FREE):
+- Bead recognition, single digit numbers
+- Visual animated abacus (SVG-based, drag & click beads)
+- AI reads out numbers in simple child-friendly language
+- Color-coded beads, celebration animations on correct answer
+
+LEVEL 2 — ELEMENTARY (Age 8–11 | FREE):
+- Addition & subtraction (1–2 digits)
+- AI gives step-by-step guidance after 2 wrong attempts
+- "Try Again" with AI hint if wrong (3 hints max on free tier)
+
+LEVEL 3 — INTERMEDIATE (Age 11–14 | PAID):
+- Multiplication and division
+- Flash anzan (mental math using abacus image flashes)
+- Timed challenges with AI adaptive difficulty
+- AI generates harder problems as score improves
+
+LEVEL 4 — ADVANCED (Age 14–18 | PAID):
+- Multi-digit operations, decimals, fractions
+- AI generates complex word problems
+- Speed drills with AI scoring and improvement tips
+
+LEVEL 5 — MASTER (Adults | PAID):
+- Mental abacus (no physical bead visual)
+- Large number arithmetic
+- AI exam mode simulating real Abacus certifications
+- AI-evaluated open-ended problems with detailed feedback
+
+=============================================================
+AI FEATURES (Claude API Integration)
+=============================================================
+
+1. AI TUTOR / HINTS:
+   After 2 wrong answers, AI explains concept in age-appropriate language.
+   
+   API call:
+   POST /api/v1/ai/hint
+   Body: { studentAge, level, problem, wrongAnswers }
+   
+   System prompt:
+   "You are a friendly, encouraging abacus tutor for a [age]-year-old student 
+   at Level [X]. They got this problem wrong twice: [problem]. Their wrong 
+   answers were: [wrongAnswers]. Explain the correct method in simple, 
+   age-appropriate language in under 80 words. Be warm and encouraging."
+   
+   Response: { hint: "string", encouragement: "string" }
+
+2. AI-GENERATED PRACTICE PROBLEMS:
+   Generate 10 fresh problems per session based on level + past performance.
+   
+   API call:
+   POST /api/v1/ai/generate-problems
+   Body: { level, recentAccuracy, focusArea, studentAge }
+   
+   System prompt:
+   "Generate exactly 10 abacus math problems for a Level [X] student aged [age].
+   Their recent accuracy is [X]%. Focus area: [focusArea].
+   Return ONLY a JSON array, no markdown, no explanation:
+   [{ question, answer, hint, difficulty: 'easy|medium|hard' }]"
+   
+   Parse response as JSON array directly.
+
+3. AI PROGRESS TRACKING & REPORTS:
+   Weekly narrative report generated by Claude from session data.
+   
+   API call:
+   POST /api/v1/ai/weekly-report
+   Body: { studentName, age, sessionsThisWeek, avgScore, 
+           levelProgress, weakAreas, strongAreas }
+   
+   System prompt:
+   "You are an abacus learning coach. Write a friendly, encouraging weekly 
+   progress report for [studentName] aged [age]. Data: [sessionData].
+   Include: what improved, what needs work, a specific practice tip, 
+   and a motivational close. Format as HTML with <h3>, <p>, <ul> tags. 
+   Keep it under 200 words."
+   
+   Save as HTML → convert to PDF → email to parent via SMTP.
+
+4. AI VOICE ASSISTANT (PAID only):
+   Uses Web Speech API + Claude for intent processing.
+   
+   Recognized voice commands:
+   - "Next problem" → load next question
+   - "Give me a hint" → trigger AI hint
+   - "Read the question" → SpeechSynthesis reads aloud
+   - "Show answer" → reveal answer (counts as wrong attempt)
+   - "How many beads?" → AI explains bead position
+   
+   Flow: SpeechRecognition → send transcript to Claude →
+   Claude returns { intent, response_text, action } →
+   Frontend executes action + speaks response_text via SpeechSynthesis
+
+5. AI ADAPTIVE DIFFICULTY:
+   After each session, send score to Claude for next session calibration.
+   
+   API call:
+   POST /api/v1/ai/adapt
+   Body: { sessionScore, timePerProblem, hintsUsed, 
+           currentLevel, recentHistory }
+   
+   System prompt:
+   "You are an adaptive learning engine. Based on this student's session data,
+   return ONLY JSON (no markdown):
+   { next_difficulty: 'easy|medium|hard', 
+     recommended_problem_count: number,
+     focus_area: 'string',
+     should_advance_level: boolean,
+     coach_tip: 'string under 20 words' }"
+
+=============================================================
+KEY PAGES / ROUTES
+=============================================================
+/                  → Landing page (hero, demo abacus, pricing)
+/signup            → Register (student/parent/teacher) + Google OAuth
+/login             → Login
+/dashboard         → Student home (streak, level, daily goal, XP)
+/learn/:level      → Practice session (SVG abacus + AI tutor)
+/progress          → Accuracy charts, speed trends, session history
+/parent            → Parent dashboard (child stats, billing, reports)
+/teacher           → Class management, bulk progress
+/admin             → Revenue, subscriptions, API usage, user mgmt
+/subscription      → Plan comparison + Razorpay checkout
+/report/:id        → Weekly AI report viewer (HTML rendered)
+/upgrade           → Soft paywall page with feature comparison
+
+=============================================================
+ANIMATED ABACUS COMPONENT (React SVG)
+=============================================================
+Build a reusable <AbacusBoard /> React component:
+- 9 vertical rods
+- Each rod: 1 heaven bead (top, separated by beam) + 4 earth beads
+- Heaven bead = value 5, Earth bead = value 1
+- Click OR drag to move beads toward/away from beam
+- CSS transition: 0.15s ease snap animation on bead movement
+- Props:
+  - mode: 'display' | 'interactive' | 'flash'
+  - value: number (display mode auto-positions beads)
+  - onValueChange: callback (interactive mode)
+  - theme: 'kids' | 'teen' | 'adult' | 'dark'
+- Flash mode: show number for 1.5s then hide beads (mental math)
+- Themes:
+  - kids:  amber beads, coral frame, sky blue background
+  - teen:  indigo beads, teal accents, white background  
+  - adult: slate beads, gold accents, dark background
+  - dark:  neon green beads, charcoal frame
+
+=============================================================
+DATABASE SCHEMA (Prisma)
+=============================================================
+
+model User {
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  password       String?
+  googleId       String?
+  role           Role     @default(STUDENT)
+  age            Int?
+  avatar         String?
+  createdAt      DateTime @default(now())
+  subscription   Subscription?
+  student        Student?
+  children       Student[] @relation("ParentChildren")
+}
+
+model Student {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  level       Int       @default(1)
+  xp          Int       @default(0)
+  streak      Int       @default(0)
+  lastActive  DateTime  @default(now())
+  parentId    String?
+  parent      User?     @relation("ParentChildren", fields: [parentId], references: [id])
+  sessions    Session[]
+  reports     Report[]
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id])
+  level       Int
+  score       Int
+  accuracy    Float
+  duration    Int      // seconds
+  problems    Json     // array of {question, answer, studentAnswer, correct}
+  hintsUsed   Int      @default(0)
+  aiAdapt     Json?    // adaptation output from Claude
+  createdAt   DateTime @default(now())
+}
+
+model Subscription {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  plan          Plan     @default(FREE)
+  status        Status   @default(ACTIVE)
+  razorpaySubId String?
+  startDate     DateTime @default(now())
+  endDate       DateTime?
+  updatedAt     DateTime @updatedAt
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id])
+  htmlContent String
+  pdfUrl      String?
+  weekOf      DateTime
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+}
+
+enum Role   { STUDENT PARENT TEACHER ADMIN }
+enum Plan   { FREE STAR SCHOOL }
+enum Status { ACTIVE EXPIRED CANCELLED }
+
+=============================================================
+API ROUTES STRUCTURE
+=============================================================
+POST   /api/v1/auth/register
+POST   /api/v1/auth/login
+GET    /api/v1/auth/google
+GET    /api/v1/auth/me
+
+GET    /api/v1/student/dashboard
+GET    /api/v1/student/progress
+POST   /api/v1/student/session/start
+POST   /api/v1/student/session/complete
+
+POST   /api/v1/ai/hint
+POST   /api/v1/ai/generate-problems
+POST   /api/v1/ai/adapt
+POST   /api/v1/ai/weekly-report
+POST   /api/v1/ai/voice-intent
+
+GET    /api/v1/parent/children
+GET    /api/v1/parent/child/:id/progress
+GET    /api/v1/parent/reports
+
+POST   /api/v1/subscription/create
+POST   /api/v1/subscription/webhook   (Razorpay webhook)
+GET    /api/v1/subscription/status
+POST   /api/v1/subscription/cancel
+
+GET    /api/v1/admin/stats
+GET    /api/v1/admin/users
+GET    /api/v1/admin/revenue
+
+=============================================================
+MIDDLEWARE
+=============================================================
+- authMiddleware: verify JWT on all /api routes
+- planGate(requiredPlan): checks subscription, returns 403 
+  with { upgrade: true, message } if plan insufficient
+- rateLimiter: free tier max 5 sessions/day (Redis or DB counter)
+- Usage: router.post('/learn', authMiddleware, planGate('STAR'), handler)
+
+=============================================================
+GAMIFICATION SYSTEM
+=============================================================
+XP REWARDS:
+- Complete a session: +10 XP
+- 100% accuracy: +25 XP bonus
+- Daily streak maintained: +15 XP
+- Level up: +100 XP
+
+BADGES (stored in student.badges JSON array):
+- "First Step" — complete first session
+- "Speed Demon" — finish 10 problems under 5 mins
+- "Zero Error" — 3 sessions with 100% accuracy
+- "7-Day Streak" — 7 consecutive days active
+- "Level Master" — complete all problems in a level
+- "Hint-Free Hero" — session with 0 hints used
+
+LEADERBOARD (PAID only):
+- Weekly reset, top 10 per level group
+- Shows: rank, name, XP, accuracy, streak
+
+=============================================================
+FRONTEND COMPONENT STRUCTURE
+=============================================================
+src/
+├── components/
+│   ├── AbacusBoard.jsx        ← SVG abacus (core component)
+│   ├── ProblemCard.jsx        ← shows question + input
+│   ├── AIHintBox.jsx          ← hint display with animation
+│   ├── VoiceButton.jsx        ← mic button for voice assistant
+│   ├── ProgressChart.jsx      ← recharts line/bar charts
+│   ├── SubscriptionModal.jsx  ← upgrade soft paywall
+│   ├── BadgeDisplay.jsx       ← badge grid
+│   └── Leaderboard.jsx        ← weekly top 10
+├── pages/
+│   ├── Landing.jsx
+│   ├── Dashboard.jsx
+│   ├── Learn.jsx              ← main practice session page
+│   ├── Progress.jsx
+│   ├── Parent.jsx
+│   ├── Teacher.jsx
+│   ├── Admin.jsx
+│   └── Subscription.jsx
+├── hooks/
+│   ├── useAI.js               ← Claude API calls
+│   ├── useSession.js          ← session state management
+│   ├── useVoice.js            ← Web Speech API wrapper
+│   └── useSubscription.js     ← plan status + gate checks
+└── store/
+    └── authStore.js           ← Zustand global auth state
+
+=============================================================
+ENV VARIABLES
+=============================================================
+ANTHROPIC_API_KEY=sk-ant-...
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+DATABASE_URL=postgresql://...
+JWT_SECRET=your_secret_here
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your@email.com
+SMTP_PASS=...
+CLIENT_URL=http://localhost:5173
+PORT=3000
+
+=============================================================
+UI / UX DESIGN DIRECTION
+=============================================================
+Typography:
+- Kids UI: "Nunito" (rounded, friendly)
+- Teen/Adult UI: "DM Sans" (clean, modern)
+- Headers: "Baloo 2" (Google Fonts)
+
+Color Themes (switchable per age group):
+- Kids:   bg amber-50, primary coral #FF6B6B, accent sky-400
+- Teen:   bg slate-50, primary indigo-600, accent teal-400
+- Adult:  bg gray-950, primary gold #F5C842, accent slate-300
+
+Animations:
+- Confetti burst on level up (canvas-confetti library)
+- Bead snap: CSS transform + transition 0.15s ease
+- AI hint slides in from bottom (CSS slide-up keyframe)
+- Daily streak flame pulse animation
+
+Mobile-first, fully responsive. PWA manifest + service worker 
+for offline access (PAID tier only — gate in service worker).
+
+=============================================================
+BUILD ORDER (Follow exactly in this sequence)
+=============================================================
+STEP 1: Project scaffold — Vite React frontend + Express backend
+STEP 2: Prisma schema + PostgreSQL connection + migrations
+STEP 3: Auth system — register, login, JWT, Google OAuth
+STEP 4: Subscription model — Free/Star/School + Razorpay integration
+STEP 5: Plan gate middleware + free tier usage limiter
+STEP 6: AbacusBoard SVG component (interactive + display modes)
+STEP 7: Claude API integration — all 5 AI endpoints
+STEP 8: Practice session flow (Learn.jsx + session API)
+STEP 9: Dashboard + Progress charts (recharts)
+STEP 10: Parent dashboard + weekly report PDF generation
+STEP 11: Teacher dashboard + class management
+STEP 12: Admin panel — users, revenue, API usage stats
+STEP 13: Gamification — XP, badges, leaderboard
+STEP 14: Voice assistant (Web Speech API + Claude intent)
+STEP 15: PWA setup — manifest, service worker, offline mode
+STEP 16: Landing page with live abacus demo widget
+
+Build each step fully with working code before proceeding.
+Use clean, modular, well-commented code throughout.
+All backend routes under /api/v1/.
+Use React Query (TanStack Query) for all frontend data fetching.
+Use Zustand for global state (auth, subscription status).
