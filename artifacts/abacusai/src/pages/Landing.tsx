@@ -79,23 +79,6 @@ const PLANS = [
     href: "/signup",
     highlighted: true,
   },
-  {
-    name: "School",
-    price: "₹999",
-    period: "per month",
-    description: "For classrooms and coaching centres",
-    features: [
-      "Everything in Star",
-      "Up to 50 students",
-      "Teacher dashboard",
-      "Class-wide analytics",
-      "Weekly AI reports",
-      "Priority support",
-    ],
-    cta: "Contact Us",
-    href: "/signup",
-    highlighted: false,
-  },
 ];
 
 const TESTIMONIALS = [
@@ -302,7 +285,7 @@ export default function Landing() {
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-8 items-stretch">
+            <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-3xl mx-auto">
               {PLANS.map((plan, i) => (
                 <motion.div
                   key={plan.name}
